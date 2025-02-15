@@ -2,6 +2,8 @@
 from pygame import *
 import random 
 init()
+font.init()
+FONT = 'PressStart2P-Regular.ttf'
 
 FPS = 60
 TILE_SIZE = 40
@@ -20,7 +22,8 @@ bg = transform.scale(bg, (WIDTH, HEIGHT))
 player_img = image.load("hero.png")
 wall_img = image.load("wall.png")
 enemy_img = image.load("cyborg.png")
-
+treasure_img = image.load("treasure.png")
+all_labels = sprite.Group()
 all_sprites = sprite.Group()
 #створи 2 спрайти та розмісти їх на сцені
 class BaseSprite(sprite.Sprite):
@@ -33,6 +36,20 @@ class BaseSprite(sprite.Sprite):
     def draw(self, window):
         window.blit(self.image, self.rect)
 
+
+class Label(sprite.Sprite):
+    def __init__(self,text, x, y, fontsize = 30,color = (255, 255, 255),font_name = FONT):
+        super().__init__()
+        self.color = color
+        self.font = font.Font(FONT, fontsize)
+        self.image = self.font.render(text, True, color)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        all_labels.add(self)
+
+    def set_text(self, new_text, color = (255, 255, 255)):
+        self.image = self.font.render(new_text, True, color)
 
 
 
@@ -75,7 +92,7 @@ class Player(BaseSprite):
             if now - self.damage_timer > 1500:
                 self.damage_timer = time.get_ticks()
                 self.hp -=10
-                print(self.hp)
+                hp_label.set_text(f"HP:{self.hp}")
             
             self.rect.x, self.rect.y = old_pos
             
@@ -109,7 +126,8 @@ class Enemy(BaseSprite):
         
 
 player1 = Player(player_img,200,300, TILE_SIZE-5, TILE_SIZE-5)
-
+result = Label("", 300, 300, fontsize=70)
+hp_label = Label(f"HP:{player1.hp}", 10, 10, fontsize=20)
 walls = sprite.Group()
 enemys = sprite.Group()
 
@@ -128,6 +146,9 @@ with open("map.txt", "r") as file:
             if symbol=='E':
                 enemys.add(Enemy(enemy_img, x, y, TILE_SIZE-5, TILE_SIZE-5))
 
+            if symbol == 'F':
+                treasure = BaseSprite(treasure_img, x, y, TILE_SIZE, TILE_SIZE)
+
             x+=TILE_SIZE
         x = 0    
         y+= TILE_SIZE
@@ -144,15 +165,25 @@ while run:
     
     if player1.hp<=0:
         finish = True
+        result.set_text("You lose!")
+        result.rect.x = WIDTH/2 - result.image.get_width()/2
+        result.rect.y = HEIGHT/2 - result.image.get_height()/2
     if not finish:
         player1.update()
 
         enemys.update()
 
+    if sprite.collide_mask(player1, treasure):
+        finish = True
+        result.set_text("You win!")
+        result.rect.x = WIDTH/2 - result.image.get_width()/2
+        result.rect.y = HEIGHT/2 - result.image.get_height()/2
+
     window.blit(bg, (0,0))
     
     all_sprites.draw(window)
     
+    all_labels.draw(window)
 
 
 
